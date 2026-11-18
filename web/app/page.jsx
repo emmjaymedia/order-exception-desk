@@ -6,6 +6,9 @@ const standalone = process.env.NEXT_PUBLIC_STANDALONE_DEMO === 'true';
 
 export default function Desk() {
   const [session, setSession] = useState('');
+  const [orders, setOrders] = useState([]);
+  const [query, setQuery] = useState('');
+  const [filter, setFilter] = useState('All');
   const [order, setOrder] = useState(null);
   const [units, setUnits] = useState({});
   const [note, setNote] = useState('');
@@ -27,8 +30,15 @@ export default function Desk() {
     const owner = localStorage.getItem('orderdesk-session') || crypto.randomUUID();
     localStorage.setItem('orderdesk-session', owner);
     setSession(owner);
-    request('sample', { method: 'POST' }, owner)
-      .then(response => response.json()).then(setOrder)
+    request('orders', {}, owner)
+      .then(response => response.json()).then(async entries => {
+        if (!entries.length) {
+          const response = await request('sample', { method: 'POST' }, owner);
+          entries = [await response.json()];
+        }
+        setOrders(entries);
+        selectOrder(entries[0]);
+      })
       .catch(() => setError('The API is unavailable. Use Load sample to retry.'));
   }, []);
 
@@ -42,7 +52,13 @@ export default function Desk() {
 
   async function load(path, options) {
     const response = await request(path, options);
-    setOrder(await response.json());
+    const next = await response.json();
+    setOrders(previous => [next, ...previous.filter(entry => entry.id !== next.id)]);
+    selectOrder(next);
+  }
+
+  function selectOrder(next) {
+    setOrder(next);
     setUnits({});
     setNote('');
     setTab('Review');
@@ -75,9 +91,23 @@ export default function Desk() {
     <main className="shell">
       <div className="intro">
         <div><div className="eyebrow">SALES OPERATIONS / PURCHASE ORDERS</div><h1>Order exception desk</h1><p>Check incoming purchase orders and approve fulfillment drafts.</p></div>
-        <div className="actions"><button disabled={busy || !session} onClick={() => act(() => { if (standalone) localStorage.removeItem('orderdesk-demo-' + session); return load('sample', { method: 'POST' }); })}>{standalone ? 'Reset sample' : 'Load sample'}</button>{!standalone && <label className="button primary">↑ Upload order<input type="file" disabled={busy || !session} accept=".pdf,.txt,.csv" onChange={upload}/></label>}</div>
+        <div className="actions"><button disabled={busy || !session} onClick={() => act(() => load('sample', { method: 'POST' }))}>Open sample</button><label className="button primary">Upload order<input type="file" disabled={busy || !session} accept={standalone ? '.csv,.txt' : '.pdf,.txt,.csv'} onChange={upload}/></label></div>
       </div>
       {error && <p className="error" role="alert">{error}</p>}
+      <section className="queue" aria-label="Order queue">
+        <div className="queueHead"><div><h2>Order queue</h2><p>{orders.length} orders · {orders.filter(entry => entry.status === 'In review').length} awaiting review</p></div>
+          <div className="queueFilters"><input aria-label="Search orders" placeholder="Search PO or customer" value={query} onChange={event => setQuery(event.target.value)}/>
+          <select aria-label="Filter by status" value={filter} onChange={event => setFilter(event.target.value)}><option>All</option><option>In review</option><option>Approved</option></select></div>
+        </div>
+        <div className="queueRows">
+          {orders.filter(entry => (filter === 'All' || entry.status === filter) && (entry.po + ' ' + entry.customer).toLowerCase().includes(query.trim().toLowerCase())).map(entry =>
+            <button className="queueRow" key={entry.id} aria-pressed={order?.id === entry.id} onClick={() => {setError(''); selectOrder(entry);}}>
+              <strong>{entry.po}</strong><span>{entry.customer}</span><span>{entry.lines.length} lines</span><span className={'status ' + (entry.status === 'Approved' ? 'approved' : '')}>{entry.status}</span>
+            </button>
+          )}
+        </div>
+        {standalone && <p className="template"><a href="/purchase-order-template.csv" download>Download CSV template</a><span>Use sample data. Orders are stored on this device.</span></p>}
+      </section>
       {order ? <>
         <section className="orderbar"><div><small>PURCHASE ORDER</small><strong>{order.po}</strong></div><div><small>CUSTOMER PROFILE</small><strong>{order.customer}</strong></div><div><small>ORDER LINES</small><strong>{order.lines.length}</strong></div><div><small>STATUS</small><strong className={'status ' + (approved ? 'approved' : '')}>{order.status}</strong></div></section>
         <nav aria-label="Order views">{['Review', 'Source document', 'Run trace'].map(view => <button key={view} aria-pressed={tab === view} onClick={() => setTab(view)}>{view}</button>)}</nav>
@@ -99,7 +129,7 @@ export default function Desk() {
           </aside>
         </div>}
         {tab === 'Source document' && <section className="panel padded"><h2>Extracted document text</h2><pre>{order.source}</pre></section>}
-        {tab === 'Run trace' && <section className="panel padded"><h2>Extraction and checks</h2><dl><dt>Extraction</dt><dd>{order.trace.method}</dd><dt>Analysis latency</dt><dd>{order.trace.latency_ms} ms</dd><dt>Policy retrieval</dt><dd>{order.trace.retrieval}</dd><dt>Tools</dt><dd>{order.trace.tools.join(' · ')}</dd><dt>Model usage</dt><dd>{order.trace.usage ? JSON.stringify(order.trace.usage) : 'No model call for this order'}</dd></dl></section>}
+        {tab === 'Run trace' && <section className="panel padded"><h2>Extraction and checks</h2><dl><dt>Extraction</dt><dd>{order.trace.method}</dd><dt>Analysis latency</dt><dd>{order.trace.latency_ms == null ? 'Not recorded' : order.trace.latency_ms + ' ms'}</dd><dt>Policy retrieval</dt><dd>{order.trace.retrieval}</dd><dt>Tools</dt><dd>{order.trace.tools.join(' · ')}</dd><dt>Model usage</dt><dd>{order.trace.usage ? JSON.stringify(order.trace.usage) : 'No model call for this order'}</dd></dl></section>}
       </> : !error && <p role="status">Loading sample purchase order…</p>}
       <footer>Orderdesk <span>{standalone ? 'Sample order · Browser storage' : 'Synthetic catalog · ERP simulation'}</span></footer>
     </main>

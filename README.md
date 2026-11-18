@@ -24,4 +24,4 @@ Run `cd api && python evaluate.py` for 40 synthetic cases covering missing units
 
 ## Public demo
 
-[Open Order Exception Desk](https://order-exception-desk.vercel.app/). The public demo uses a sample order and browser storage. It supports reviewing, approving, exporting and resetting that order. For uploads and backend persistence, run the connected setup above. To build the standalone demo, set `NEXT_PUBLIC_STANDALONE_DEMO=true` when running `npm run build`.
+[Open Order Exception Desk](https://order-exception-desk.vercel.app/). The public demo has a searchable order queue, CSV and TXT intake for the downloadable Alder Supply template, duplicate checks, approval history and ERP CSV export. It stores synthetic orders in the current browser. For PDF uploads and shared backend persistence, run the connected setup above. To build the standalone demo, set `NEXT_PUBLIC_STANDALONE_DEMO=true` when running `npm run build`.
