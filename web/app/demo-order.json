@@ -1,0 +1,66 @@
+{
+  "id": "f626da5d9dc8bff5ea75e54b",
+  "po": "PO-1042",
+  "customer": "Alder Supply",
+  "source": "PO: PO-1042\nCustomer: Alder Supply\nPart,Quantity,Unit,Unit price\nAF-102,20,,96.00\nBL-208,6,EACH,10.00",
+  "lines": [
+    {
+      "part": "AF-102",
+      "quantity": 20,
+      "unit": "",
+      "price": "96.00",
+      "index": 0,
+      "resolved_unit": "",
+      "each": null,
+      "item": {
+        "sku": "FLT-778",
+        "name": "Industrial air filter",
+        "pack": 12,
+        "stock": 480,
+        "case_price": "96.00",
+        "each_price": "8.00"
+      },
+      "exceptions": [
+        "Quantity could mean individual items or cases."
+      ],
+      "evidence": [
+        [
+          "ALD-01 \u00a72",
+          "For Alder Supply, quantities for AF-102 and BL-208 must explicitly say EACH or CASE. Confirm missing units with the buyer."
+        ]
+      ]
+    },
+    {
+      "part": "BL-208",
+      "quantity": 6,
+      "unit": "EACH",
+      "price": "10.00",
+      "index": 1,
+      "resolved_unit": "EACH",
+      "each": 6,
+      "item": {
+        "sku": "BLT-441",
+        "name": "Drive belt",
+        "pack": 6,
+        "stock": 120,
+        "case_price": "60.00",
+        "each_price": "10.00"
+      },
+      "exceptions": [],
+      "evidence": []
+    }
+  ],
+  "status": "In review",
+  "audit": [
+    "Order analyzed"
+  ],
+  "trace": {
+    "method": "Template parser",
+    "usage": null,
+    "tools": [
+      "Customer SKU lookup",
+      "Inventory lookup"
+    ],
+    "latency_ms": 2
+  }
+}
